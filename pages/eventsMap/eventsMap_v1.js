@@ -16,6 +16,9 @@ const EASTER_EGG_PHRASES = {
     builtbyaliens: GREAT_PYRAMID,
 };
 
+const GEOJSON_LAYER_SOURCES = {
+    tubeStations: 'https://cdn.jsdelivr.net/gh/pat-mw/farrago-js/data/tubemaps.json'
+}
 // Get the location data from the displayed elements
 const getEventData = () => {
     const eventElements = document.querySelectorAll("#location-data .location");

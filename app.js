@@ -1,10 +1,14 @@
+// import tube maps geojson
+
+
+
 // Replace with your own Mapbox access token
 mapboxgl.accessToken =
     "pk.eyJ1IjoiZmFycmFnbyIsImEiOiJjbGtuNW45dXYwazN6M2VwbGZ3aXRrdm9jIn0.lq66B9IqTWnxWKmP0LsYDg";
 
 // Define the locations of the easter eggs
 const CHICHENITZA = [-88.5710518, 20.6809718];
-const EIFFEL = [2.2896104, 48.8583735] ;
+const EIFFEL = [2.2896104, 48.8583735];
 const GREAT_PYRAMID = [31.1316297, 29.9791751];
 const COLOSSEUM = [12.489656, 41.8902142];
 
@@ -16,6 +20,10 @@ const EASTER_EGG_PHRASES = {
     builtbyaliens: GREAT_PYRAMID,
 };
 
+// Create the global map object
+let map;
+let events;
+
 // Get the location data from the displayed elements
 const getEventData = () => {
     const eventElements = document.querySelectorAll("#location-data .location");
@@ -23,7 +31,13 @@ const getEventData = () => {
 
     eventElements.forEach((element) => {
         const id = element.getAttribute("data-id");
+        // TODO: add google maps link in UI
         const locationUrl = element.getAttribute("data-locationUrl");
+
+        // TODO: fetch event tags using attributes
+        // search children for tags
+        const tags = element.querySelectorAll("[data-tag]");
+
         const eventEl = element;
         const name = element.getAttribute("data-name");
         const address = element.getAttribute("data-address");
@@ -73,27 +87,39 @@ function getEventsMapBounds(events) {
     return defaultMapBounds;
 }
 
-// Initialize the map
-const initializeMap = () => {
-    $(".map-overlay-layer").hide();
-    const btnResetMapEl = document.querySelector("[btn-reset-map]");
-    const locationsCollectionEl = document.querySelector(
-        "[el-locations-collection]"
+function getUsersLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition);
+    } else {
+        x.innerHTML = "Geolocation is not supported by this browser.";
+    }
+}
+
+function showPosition(position) {
+    console.log(
+        "Latitude: " +
+            position.coords.latitude +
+            "<br>Longitude: " +
+            position.coords.longitude
     );
 
-    const events = getEventData();
+    // Add a marker to the map
+    var marker = new mapboxgl.Marker()
+        .setLngLat([position.coords.longitude, position.coords.latitude])
+        .addTo(map)
+        .setPopup(
+            new mapboxgl.Popup().setHTML(
+                "<h1>Current Location</h1><p>You are here!</p>"
+            )
+        );
+}
 
-    if (events.length === 0) {
-        console.error("No events with valid locations found.");
-        return;
-    } else {
-        console.log(`Found ${events.length} events with valid locations.`);
-    }
+// Initialize the map
+const initializeMap = () => {
+    events = getEventData();
 
-    // initialise from the map bounds
-    var eventsBounds = getEventsMapBounds(events);
-
-    const map = new mapboxgl.Map({
+    const eventsBounds = getEventsMapBounds(events);
+    map = new mapboxgl.Map({
         container: "map",
         // style: "mapbox://styles/farrago/clkn624w100kp01pc3gu6eryr",
         style: "mapbox://styles/farrago/clw1bds4q021z01o0e98rfaxs",
@@ -104,6 +130,16 @@ const initializeMap = () => {
         minZoom: 10,
         maxBounds: eventsBounds,
     });
+
+    $(".map-overlay-layer").hide();
+    const btnResetMapEl = document.querySelector("[btn-reset-map]");
+
+    if (events.length === 0) {
+        console.error("No events with valid locations found.");
+        return;
+    } else {
+        console.log(`Found ${events.length} events with valid locations.`);
+    }
 
     map.touchZoomRotate.enable();
 
@@ -145,10 +181,6 @@ const initializeMap = () => {
 
                     selectedEvent = currentSelectedParent; // Update the selected event
 
-                    // event.eventEl is the element of this event
-                    // it is a grandchild of locationsCollectionEl
-                    // locationsCollec tionEl is set to overflow-auto
-                    // if the selected event is not in view, scroll to it
                     event.eventEl.scrollIntoView({
                         behavior: "smooth",
                         block: "nearest",
@@ -201,10 +233,11 @@ const initializeMap = () => {
         }
     });
 
-    // add an easter egg that checks user keyboard presses without overriding the default event.
-    // when the precise sequence of characters matched by 'EASTER_EGG_PHRASE' (ex: 'pizza') is hit, set the maps location to the EASTER_EGG_LOCATION
+    // getUsersLocation
+    getUsersLocation();
 
-    // Initialize an empty string to store the keys pressed by the user
+    // ----------------- EASTER EGG -----------------
+
     let keysPressed = "";
 
     window.addEventListener("keypress", (e) => {
@@ -291,7 +324,5 @@ const getPopup = (event, onPopupClose) => {
     }
     return popup;
 };
-
-
 
 initializeMap();
